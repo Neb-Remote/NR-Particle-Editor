@@ -7,9 +7,10 @@
 #include <SFML/Window/Event.hpp>
 #include <imgui-SFML.h>
 
-constexpr auto WINDOW_TITLE { "NR Particle Editor" };
+constexpr auto WINDOW_TITLE{ "NR Particle Editor" };
 
 App::App()
+    : m_emitter(&m_propertiesFileData)
 {
     const auto desktopMode = sf::VideoMode::getDesktopMode();
     m_renderWindow.create(desktopMode, WINDOW_TITLE, sf::Style::Default);
@@ -50,6 +51,9 @@ void App::run()
         ImGui::SFML::Update(m_renderWindow, dt);
 
         m_renderWindow.clear();
+
+        m_renderWindow.draw(m_emitter);
+
         ImGui::SFML::Render();
         m_renderWindow.display();
     }

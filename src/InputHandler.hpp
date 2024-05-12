@@ -37,4 +37,3 @@ private:
     static std::set<sf::Mouse::Button> m_mouseButtonReleased;
     static std::set<sf::Mouse::Button> m_mouseButtonHeld;
 };
-} // nce namespace

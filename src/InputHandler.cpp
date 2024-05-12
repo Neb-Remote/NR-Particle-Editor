@@ -34,41 +34,18 @@ void InputHandler::HandleEvent(sf::Event& event, sf::RenderWindow& window)
     HandleKeyboardAndMouse(event, window);
 }
 
-auto InputHandler::KeyPressed(sf::Keyboard::Scan key) -> bool
-{
-    const auto present = m_keyboardPressed.find(key);
-    return present != m_keyboardPressed.end();
-}
+auto InputHandler::KeyPressed(sf::Keyboard::Scan key) -> bool { return m_keyboardPressed.contains(key); }
 
-auto InputHandler::KeyHeld(sf::Keyboard::Scan key) -> bool
-{
-    const auto present = m_keyboardHeld.find(key);
-    return present != m_keyboardHeld.end();
-}
+auto InputHandler::KeyHeld(sf::Keyboard::Scan key) -> bool { return m_keyboardHeld.contains(key); }
 
-auto InputHandler::KeyReleased(sf::Keyboard::Scan key) -> bool
-{
-    const auto present = m_keyboardReleased.find(key);
-    return present != m_keyboardReleased.end();
-}
+auto InputHandler::KeyReleased(sf::Keyboard::Scan key) -> bool { return m_keyboardReleased.contains(key); }
 
-auto InputHandler::MousePressed(sf::Mouse::Button button) -> bool
-{
-    const auto present = m_mouseButtonPressed.find(button);
-    return present != m_mouseButtonPressed.end();
-}
+auto InputHandler::MousePressed(sf::Mouse::Button button) -> bool { return m_mouseButtonPressed.contains(button); }
 
-auto InputHandler::MouseReleased(sf::Mouse::Button button) -> bool
-{
-    const auto present = m_mouseButtonReleased.find(button);
-    return present != m_mouseButtonReleased.end();
-}
+auto InputHandler::MouseReleased(sf::Mouse::Button button) -> bool { return m_mouseButtonReleased.contains(button); }
 
-auto InputHandler::MouseHeld(sf::Mouse::Button button) -> bool
-{
-    const auto present = m_mouseButtonHeld.find(button);
-    return present != m_mouseButtonHeld.end();
-}
+auto InputHandler::MouseHeld(sf::Mouse::Button button) -> bool { return m_mouseButtonHeld.contains(button); }
+
 auto InputHandler::GetMouseWorldPosition() -> sf::Vector2f { return m_mousePositionWorld; }
 
 auto InputHandler::GetMouseScreenPosition() -> sf::Vector2i { return m_mousePositionScreen; }

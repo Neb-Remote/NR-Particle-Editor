@@ -1,7 +1,7 @@
 #include "App.hpp"
 
-#include "../build/relwithdebinfo/_deps/sfml-src/include/SFML/Graphics/VertexBuffer.hpp"
 #include "InputHandler.hpp"
+#include <spdlog/spdlog.h>
 
 #include <SFML/System/String.hpp>
 #include <SFML/Window/Event.hpp>
@@ -17,6 +17,12 @@ App::App()
 
     if (!ImGui::SFML::Init(m_renderWindow))
         throw std::runtime_error("Unable to init ImGui::SFML!");
+
+#ifdef NR_PARTICLE_EDITOR_DEBUG
+    spdlog::set_level(spdlog::level::debug);
+#else
+    spdlog::set_level(spdlog::level::info);
+#endif
 }
 
 App::~App() { ImGui::SFML::Shutdown(m_renderWindow); }
@@ -40,7 +46,9 @@ void App::run()
             InputHandler::HandleEvent(event, m_renderWindow);
             ImGui::SFML::ProcessEvent(m_renderWindow, event);
         }
+
         ImGui::SFML::Update(m_renderWindow, dt);
+
         m_renderWindow.clear();
         ImGui::SFML::Render();
         m_renderWindow.display();

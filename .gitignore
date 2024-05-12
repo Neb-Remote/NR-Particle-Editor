@@ -1,12 +1,5 @@
 build/
-build_clang/
-imgui.ini
-*.zip
 .vs/
 .vscode/
-CMakeSettings.json
 .cache/
 .idea/
-cmake-build-*/
-logs/
-compile_commands.json

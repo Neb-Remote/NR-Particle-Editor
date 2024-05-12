@@ -5,5 +5,5 @@ AlignAfterOpenBracket: Align
 AlwaysBreakTemplateDeclarations: Yes
 BinPackArguments: false
 BinPackParameters: false
-ColumnLimit: 160
+ColumnLimit: 120
 NamespaceIndentation: None

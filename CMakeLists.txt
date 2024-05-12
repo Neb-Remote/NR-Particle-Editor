@@ -3,7 +3,6 @@ project(nr-particle-editor CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(BUILD_SHARED_LIBS false)
-set(LIST_HEADERS true)
 
 add_subdirectory(external)
 

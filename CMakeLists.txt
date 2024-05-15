@@ -33,7 +33,7 @@ endif ()
 
 target_compile_features(nr-particle-editor PUBLIC cxx_std_20)
 
-target_link_libraries(nr-particle-editor PRIVATE SFML::Graphics ImGui-SFML::ImGui-SFML spdlog nlohmann_json)
+target_link_libraries(nr-particle-editor PRIVATE SFML::Graphics ImGui-SFML::ImGui-SFML spdlog nlohmann_json expected ImGuiFileDialog)
 
 if (MSVC)
     add_compile_options("/MP")

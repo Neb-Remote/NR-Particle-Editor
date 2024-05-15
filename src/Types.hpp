@@ -4,9 +4,9 @@
 #include <SFML/System/Angle.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <cstdint>
-#include <type_traits>
-#include <spdlog/fmt/fmt.h>
 #include <format>
+#include <spdlog/fmt/fmt.h>
+#include <type_traits>
 
 using i8 = int8_t;
 using i16 = int16_t;

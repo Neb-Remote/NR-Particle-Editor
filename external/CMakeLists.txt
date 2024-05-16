@@ -12,7 +12,7 @@ FetchContent_MakeAvailable(spdlog)
 
 FetchContent_Declare(ImGui
         GIT_REPOSITORY https://github.com/ocornut/imgui
-        GIT_TAG v1.89)
+        GIT_TAG v1.90.6)
 FetchContent_MakeAvailable(ImGui)
 FetchContent_GetProperties(ImGui SOURCE_DIR IMGUI_DIR)
 
@@ -27,3 +27,9 @@ FetchContent_Declare(nlohmann_json
         GIT_TAG v3.11.3)
 FetchContent_MakeAvailable(nlohmann_json)
 
+FetchContent_Declare(tl-expected
+        GIT_REPOSITORY https://github.com/TartanLlama/expected.git
+        GIT_TAG v1.1.0)
+FetchContent_MakeAvailable(tl-expected)
+
+add_subdirectory(ImGuiFileDialog)

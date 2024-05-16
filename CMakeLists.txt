@@ -33,10 +33,9 @@ endif ()
 
 target_compile_features(nr-particle-editor PUBLIC cxx_std_20)
 
-target_link_libraries(nr-particle-editor PRIVATE SFML::Graphics ImGui-SFML::ImGui-SFML spdlog nlohmann_json)
+target_link_libraries(nr-particle-editor PRIVATE SFML::Graphics ImGui-SFML::ImGui-SFML spdlog nlohmann_json expected ImGuiFileDialog)
 
 if (MSVC)
-    add_compile_options("/MP")
     target_compile_definitions(nr-particle-editor PRIVATE _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING)
     target_compile_options(nr-particle-editor PRIVATE /W4 /WX /permissive- /wd4068)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")

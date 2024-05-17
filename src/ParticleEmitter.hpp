@@ -14,10 +14,11 @@ struct PropertiesFileData;
 struct Particle {
     sf::Vector2f position;
     sf::Vector2f velocity;
-    sf::Vector2f acceleration;
     sf::Angle rotation;
     sf::Time aliveTime;
     sf::Time maxAliveTime;
+    f32 scale { 1.f };
+    f32 scaleMultiplier { 1.f };
     bool operator==(const Particle& p) const = default;
 };
 
@@ -31,6 +32,7 @@ public:
     void setLooping(bool looping);
 
     u32 getAliveParticleCount() const { return static_cast<u32>(m_activeParticles.size()); }
+    bool isPlaying() const { return m_isPlaying; }
 
 private:
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;

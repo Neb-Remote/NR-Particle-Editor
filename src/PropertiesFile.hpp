@@ -11,7 +11,7 @@
 #include <tl/expected.hpp>
 
 struct ParticleProperties {
-    f32 alpahStart { 0.f };
+    f32 alphaStart { 0.f };
     f32 alphaEnd { 0.f };
 
     f32 scaleStart { 0.f };

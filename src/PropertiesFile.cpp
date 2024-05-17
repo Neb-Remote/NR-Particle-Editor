@@ -19,6 +19,9 @@ std::optional<sf::Color> ColourFromHex(std::string_view hexCode)
     sstream << std::hex << hexStr;
     sstream >> hexAsUint;
 
+    // Shift the values up and force alpha to be 255 for now
+    hexAsUint = hexAsUint << 8;
+    hexAsUint = hexAsUint | 0xFF;
     return sf::Color(hexAsUint);
 }
 
@@ -45,7 +48,7 @@ tl::expected<PropertiesFileData, std::string> LoadFromJSON(std::string_view file
         inputFile >> jsonRoot;
 
         // Load Particle Properites
-        propFileData.particleProperties.alphaEnd = jsonRoot["alpha"]["start"].get<f32>();
+        propFileData.particleProperties.alphaStart = jsonRoot["alpha"]["start"].get<f32>();
         propFileData.particleProperties.alphaEnd = jsonRoot["alpha"]["end"].get<f32>();
 
         propFileData.particleProperties.scaleStart = jsonRoot["scale"]["start"].get<f32>();
@@ -62,7 +65,7 @@ tl::expected<PropertiesFileData, std::string> LoadFromJSON(std::string_view file
         }
 
         if (const auto colour = ColourFromHex(colourStartEnd)) {
-            propFileData.particleProperties.colourStart = *colour;
+            propFileData.particleProperties.colourEnd = *colour;
         } else {
             return tl::unexpected("Unable to isolate particle end colour from JSON");
         }

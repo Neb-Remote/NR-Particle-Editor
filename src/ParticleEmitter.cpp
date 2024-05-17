@@ -3,7 +3,7 @@
 #include "RNG.hpp"
 #include "Utils.hpp"
 
-#include <SFML/Graphics/RectangleShape.hpp>
+#include <algorithm>
 #include <spdlog/spdlog.h>
 
 constexpr sf::Vector2f DEFAULT_PARTICLE_SIZE { 16.f, 16.f };
@@ -23,7 +23,6 @@ ParticleEmitter::ParticleEmitter(PropertiesFileData* propertiesFileData)
 
 void ParticleEmitter::update(sf::Time dt)
 {
-    UNUSED(dt);
     if (!m_isPlaying)
         return;
 
@@ -31,12 +30,16 @@ void ParticleEmitter::update(sf::Time dt)
     m_aliveTime += dt;
     m_spawnTimer += dt;
 
-    if (m_aliveTime > m_propertiesFileData->emitterProperties.lifeTime && !m_loop) {
-        stop();
-        return;
-    } else if (m_aliveTime > m_propertiesFileData->emitterProperties.lifeTime && m_loop) {
-        stop();
-        play();
+    if (m_aliveTime > m_propertiesFileData->emitterProperties.lifeTime) {
+        if (m_activeParticles.empty()) {
+            if (!m_loop) {
+                stop();
+                return;
+            } else {
+                stop();
+                play();
+            }
+        }
     }
 
     if (m_spawnTimer > m_propertiesFileData->emitterProperties.spawnFrequency
@@ -51,16 +54,33 @@ void ParticleEmitter::update(sf::Time dt)
     for (auto& p : m_activeParticles) {
         p.aliveTime += dt;
 
-        if (p.acceleration != sf::Vector2f {})
-            p.velocity += p.acceleration * dt.asSeconds();
+        // Find expired particles, we'll skip updating them cause they're going to be purged
+        if (p.aliveTime > p.maxAliveTime) {
+            toRemove.emplace_back(p);
+            continue;
+        }
+
+        const auto t = std::clamp(p.aliveTime / p.maxAliveTime, 0.f, 1.f); // Used for lerping
+
+        // If there's a valid acceleration value, we'll apply acceleration to the velocity
+        // otherwise we'll lerp the speed value and use the current rotation of the
+        // particle as the direction
+        if (m_propertiesFileData->particleProperties.acceleration != sf::Vector2f {}) {
+            p.velocity += m_propertiesFileData->particleProperties.acceleration * dt.asSeconds();
+        } else {
+            const auto newSpeed = std::lerp(m_propertiesFileData->particleProperties.speedStart,
+                                            m_propertiesFileData->particleProperties.speedEnd,
+                                            t);
+            p.velocity = sf::Vector2f(newSpeed, p.rotation);
+        }
 
         p.position += p.velocity * dt.asSeconds();
-
-        // Find dead particles
-        if (p.aliveTime > p.maxAliveTime)
-            toRemove.emplace_back(p);
+        p.scale = std::lerp(m_propertiesFileData->particleProperties.scaleStart * p.scaleMultiplier,
+                            m_propertiesFileData->particleProperties.scaleEnd * p.scaleMultiplier,
+                            t);
     }
 
+    // Purge unrequired particles
     for (auto& p : toRemove)
         std::erase(m_activeParticles, p);
 
@@ -98,6 +118,11 @@ void ParticleEmitter::reconstructVertices()
     vertices.resize(m_activeParticles.size() * VERTS_PER_QUAD);
 
     for (size_t i { 0 }; i < m_activeParticles.size(); ++i) {
+        // TODO: We could probably do this during the update and store the current colour, scale and alpha
+        // on the particle itself, thus ensuring reconstructVertices doesn't calculate new values
+        // but only constructs the vertices to be ready for rendering
+        const auto t = m_activeParticles[i].aliveTime / m_activeParticles[i].maxAliveTime;
+
         auto quad = &vertices[i * VERTS_PER_QUAD];
         sf::Vector2f halfSize;
         if (m_propertiesFileData->texture) {
@@ -106,20 +131,46 @@ void ParticleEmitter::reconstructVertices()
             halfSize = DEFAULT_PARTICLE_SIZE * 0.5f;
         }
 
-        quad[0].position = m_activeParticles[i].position - halfSize;
-        quad[1].position = m_activeParticles[i].position + sf::Vector2f(halfSize.x, -halfSize.y);
-        quad[2].position = m_activeParticles[i].position + halfSize;
+        quad[0].position = -halfSize;
+        quad[1].position = sf::Vector2f(halfSize.x, -halfSize.y);
+        quad[2].position = halfSize;
 
-        quad[3].position = m_activeParticles[i].position + halfSize;
-        quad[4].position = m_activeParticles[i].position + sf::Vector2f(-halfSize.x, halfSize.y);
-        quad[5].position = m_activeParticles[i].position - halfSize;
+        quad[3].position = halfSize;
+        quad[4].position = sf::Vector2f(-halfSize.x, halfSize.y);
+        quad[5].position = -halfSize;
 
-        quad[0].color = sf::Color::White;
-        quad[1].color = sf::Color::White;
-        quad[2].color = sf::Color::White;
-        quad[3].color = sf::Color::White;
-        quad[4].color = sf::Color::White;
-        quad[5].color = sf::Color::White;
+        sf::Transform transform;
+        transform = transform.translate(m_activeParticles[i].position);
+        transform.scale(sf::Vector2f { m_activeParticles[i].scale, m_activeParticles[i].scale });
+        transform = transform.rotate(m_activeParticles[i].rotation);
+
+        quad[0].position = transform * quad[0].position;
+        quad[1].position = transform * quad[1].position;
+        quad[2].position = transform * quad[2].position;
+        quad[3].position = transform * quad[3].position;
+        quad[4].position = transform * quad[4].position;
+        quad[5].position = transform * quad[5].position;
+
+        const auto colour = LerpColour(m_propertiesFileData->particleProperties.colourStart,
+                                       m_propertiesFileData->particleProperties.colourEnd,
+                                       t);
+
+        quad[0].color = colour;
+        quad[1].color = colour;
+        quad[2].color = colour;
+        quad[3].color = colour;
+        quad[4].color = colour;
+        quad[5].color = colour;
+
+        const auto alpha = std::lerp(
+            m_propertiesFileData->particleProperties.alphaStart, m_propertiesFileData->particleProperties.alphaEnd, t);
+
+        quad[0].color.a = static_cast<u8>(255.f * alpha);
+        quad[1].color.a = static_cast<u8>(255.f * alpha);
+        quad[2].color.a = static_cast<u8>(255.f * alpha);
+        quad[3].color.a = static_cast<u8>(255.f * alpha);
+        quad[4].color.a = static_cast<u8>(255.f * alpha);
+        quad[5].color.a = static_cast<u8>(255.f * alpha);
     }
 
     if (!m_vertexBuffer.update(vertices.data(), vertices.size(), 0))
@@ -133,5 +184,25 @@ void ParticleEmitter::emitParticle()
     p.maxAliveTime
         = sf::seconds(RNG::RealWithinRange(m_propertiesFileData->particleProperties.lifeTimeMin.asSeconds(),
                                            m_propertiesFileData->particleProperties.lifeTimeMax.asSeconds()));
+
+    // Rotation
+    p.rotation
+        = sf::degrees(RNG::RealWithinRange(m_propertiesFileData->particleProperties.startRotationMin.asDegrees(),
+                                           m_propertiesFileData->particleProperties.startRotationMax.asDegrees()));
+
+    p.velocity = sf::Vector2f(m_propertiesFileData->particleProperties.speedStart, p.rotation);
+
+    p.scale = m_propertiesFileData->particleProperties.scaleStart;
+
+    if (m_propertiesFileData->particleProperties.minimumScaleMultiplier != 1.f) {
+
+        if (m_propertiesFileData->particleProperties.minimumScaleMultiplier > 1.f) {
+            p.scaleMultiplier
+                = RNG::RealWithinRange(1.f, m_propertiesFileData->particleProperties.minimumScaleMultiplier);
+        } else {
+            p.scaleMultiplier
+                = RNG::RealWithinRange(m_propertiesFileData->particleProperties.minimumScaleMultiplier, 1.f);
+        }
+    }
     m_activeParticles.emplace_back(p);
 }

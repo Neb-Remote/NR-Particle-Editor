@@ -30,31 +30,36 @@ void ParticleEmitter::update(sf::Time dt)
     m_aliveTime += dt;
     m_spawnTimer += dt;
 
-    if (m_aliveTime > m_propertiesFileData->emitterProperties.lifeTime) {
-        if (m_activeParticles.empty()) {
-            if (!m_loop) {
-                stop();
-                return;
-            }
+    // 0 second lifetime means we're infinite
+    if (m_propertiesFileData->emitterProperties.lifeTime > sf::seconds(0.f)) {
+        if (m_aliveTime > m_propertiesFileData->emitterProperties.lifeTime) {
+            if (m_activeParticles.empty()) {
+                if (!m_loop) {
+                    stop();
+                    return;
+                }
 
-            stop();
-            play();
+                stop();
+                play();
+            }
         }
     }
-
-    if (m_spawnTimer > m_propertiesFileData->emitterProperties.spawnFrequency
-        && m_aliveTime < m_propertiesFileData->emitterProperties.lifeTime) {
-        spdlog::debug("Emitting particle, spawn timer is {} and freq is {}",
-                      m_spawnTimer.asSeconds(),
-                      m_propertiesFileData->emitterProperties.spawnFrequency.asSeconds());
+    const auto spawnTimeExpired = m_spawnTimer > m_propertiesFileData->emitterProperties.spawnFrequency;
+    bool emitterStillValid { false };
+    if (m_propertiesFileData->emitterProperties.lifeTime > sf::seconds(0.f)) {
+        emitterStillValid = m_aliveTime < m_propertiesFileData->emitterProperties.lifeTime;
+    } else {
+        emitterStillValid = true;
+    }
+    if (spawnTimeExpired && emitterStillValid) {
         emitParticle(sf::seconds(0.f));
         const auto difference = m_spawnTimer - m_propertiesFileData->emitterProperties.spawnFrequency;
         const auto missedParticleCount
             = static_cast<i32>(difference / m_propertiesFileData->emitterProperties.spawnFrequency);
 
-        spdlog::debug("Missed count {}", missedParticleCount);
         for (auto i { 1 }; i <= missedParticleCount; ++i)
-            emitParticle(sf::seconds(dt.asSeconds() * static_cast<f32>(i)));
+            emitParticle(
+                sf::seconds(m_propertiesFileData->emitterProperties.spawnFrequency.asSeconds() * static_cast<f32>(i)));
 
         m_spawnTimer = sf::Time::Zero;
     }

@@ -86,7 +86,12 @@ tl::expected<PropertiesFileData, std::string> LoadFromJSON(std::string_view file
         propFileData.particleProperties.lifeTimeMax = sf::seconds(jsonRoot["lifetime"]["max"].get<f32>());
 
         // Load Emitter Properties
-        propFileData.emitterProperties.lifeTime = sf::seconds(jsonRoot["emitterLifetime"].get<f32>());
+        const auto lifeTime = sf::seconds(jsonRoot["emitterLifetime"].get<f32>());
+        if (lifeTime > sf::seconds(0.f))
+            propFileData.emitterProperties.lifeTime = sf::seconds(jsonRoot["emitterLifetime"].get<f32>());
+        else
+            propFileData.emitterProperties.lifeTime = sf::seconds(0.f);
+
         propFileData.emitterProperties.maxParticles = jsonRoot["maxParticles"].get<u32>();
         propFileData.emitterProperties.spawnFrequency = sf::seconds(jsonRoot["frequency"].get<f32>());
     } catch (const nlohmann::json::exception& e) {

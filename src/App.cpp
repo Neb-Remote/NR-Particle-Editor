@@ -212,7 +212,7 @@ void App::displayEmitterProperties() { }
 sf::Vector2i App::calculateMenuSize()
 {
     sf::Vector2i size;
-    size.x = static_cast<i32>(m_renderWindow.getSize().x * 0.20f);
+    size.x = static_cast<i32>(static_cast<f32>(m_renderWindow.getSize().x) * 0.20f);
     size.y = m_renderWindow.getSize().y;
     return size;
 }

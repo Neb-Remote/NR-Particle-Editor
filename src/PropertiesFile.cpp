@@ -32,7 +32,7 @@ tl::expected<PropertiesFileData, std::string> LoadFromJSON(std::string_view file
     }
 
     std::ifstream inputFile;
-    inputFile.open(filePath, std::ios::in);
+    inputFile.open(filePath.data(), std::ios::in);
 
     if (inputFile.fail()) {
         return tl::unexpected("Unable to load {}");

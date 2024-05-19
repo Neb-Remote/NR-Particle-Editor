@@ -37,7 +37,7 @@ public:
 private:
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
     void reconstructVertices();
-    void emitParticle();
+    void emitParticle(sf::Time timeAhead);
 
     PropertiesFileData* m_propertiesFileData;
     sf::VertexBuffer m_vertexBuffer;

@@ -35,16 +35,27 @@ void ParticleEmitter::update(sf::Time dt)
             if (!m_loop) {
                 stop();
                 return;
-            } else {
-                stop();
-                play();
             }
+
+            stop();
+            play();
         }
     }
 
     if (m_spawnTimer > m_propertiesFileData->emitterProperties.spawnFrequency
         && m_aliveTime < m_propertiesFileData->emitterProperties.lifeTime) {
-        emitParticle();
+        spdlog::debug("Emitting particle, spawn timer is {} and freq is {}",
+                      m_spawnTimer.asSeconds(),
+                      m_propertiesFileData->emitterProperties.spawnFrequency.asSeconds());
+        emitParticle(sf::seconds(0.f));
+        const auto difference = m_spawnTimer - m_propertiesFileData->emitterProperties.spawnFrequency;
+        const auto missedParticleCount
+            = static_cast<i32>(difference / m_propertiesFileData->emitterProperties.spawnFrequency);
+
+        spdlog::debug("Missed count {}", missedParticleCount);
+        for (auto i { 1 }; i <= missedParticleCount; ++i)
+            emitParticle(sf::seconds(dt.asSeconds() * static_cast<f32>(i)));
+
         m_spawnTimer = sf::Time::Zero;
     }
 
@@ -67,6 +78,10 @@ void ParticleEmitter::update(sf::Time dt)
         // particle as the direction
         if (m_propertiesFileData->particleProperties.acceleration != sf::Vector2f {}) {
             p.velocity += m_propertiesFileData->particleProperties.acceleration * dt.asSeconds();
+
+            // Maximum speed only applies when we're using acceleration
+            if (p.velocity.lengthSq() > std::pow(m_propertiesFileData->particleProperties.maximumSpeed, 2.f))
+                p.velocity = p.velocity.normalized() * m_propertiesFileData->particleProperties.maximumSpeed;
         } else {
             const auto newSpeed = std::lerp(m_propertiesFileData->particleProperties.speedStart,
                                             m_propertiesFileData->particleProperties.speedEnd,
@@ -75,6 +90,7 @@ void ParticleEmitter::update(sf::Time dt)
         }
 
         p.position += p.velocity * dt.asSeconds();
+
         p.scale = std::lerp(m_propertiesFileData->particleProperties.scaleStart * p.scaleMultiplier,
                             m_propertiesFileData->particleProperties.scaleEnd * p.scaleMultiplier,
                             t);
@@ -178,7 +194,7 @@ void ParticleEmitter::reconstructVertices()
                       vertices.size());
 }
 
-void ParticleEmitter::emitParticle()
+void ParticleEmitter::emitParticle(sf::Time timeAhead)
 {
     Particle p;
     p.maxAliveTime
@@ -204,5 +220,7 @@ void ParticleEmitter::emitParticle()
                 = RNG::RealWithinRange(m_propertiesFileData->particleProperties.minimumScaleMultiplier, 1.f);
         }
     }
+
+    p.aliveTime = timeAhead;
     m_activeParticles.emplace_back(p);
 }

@@ -95,6 +95,7 @@ void App::displayMenu(sf::Time dt)
             m_loadedFilePath = ImGuiFileDialog::Instance()->GetFilePathName();
             if (const auto loadResult = LoadFromJSON(m_loadedFilePath)) {
                 m_propertiesFileData = loadResult.value();
+                m_loadErrorString.clear();
                 resetEmitter();
             } else {
                 m_loadErrorString = loadResult.error();

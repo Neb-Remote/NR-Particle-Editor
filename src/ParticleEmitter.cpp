@@ -9,12 +9,12 @@
 constexpr sf::Vector2f DEFAULT_PARTICLE_SIZE { 16.f, 16.f };
 constexpr u32 VERTS_PER_QUAD { 6 };
 
-ParticleEmitter::ParticleEmitter(PropertiesFileData* propertiesFileData)
+ParticleEmitter::ParticleEmitter(const PropertiesFileData& propertiesFileData)
     : m_propertiesFileData(propertiesFileData)
 {
-    assert(m_propertiesFileData->emitterProperties.maxParticles > 0);
+    assert(m_propertiesFileData.emitterProperties.maxParticles > 0);
 
-    if (!m_vertexBuffer.create(m_propertiesFileData->emitterProperties.maxParticles * VERTS_PER_QUAD))
+    if (!m_vertexBuffer.create(m_propertiesFileData.emitterProperties.maxParticles * VERTS_PER_QUAD))
         throw std::runtime_error("Unable to create vertex buffer for ParticleEmitter");
 
     m_vertexBuffer.setPrimitiveType(sf::PrimitiveType::Triangles);
@@ -31,8 +31,8 @@ void ParticleEmitter::update(sf::Time dt)
     m_spawnTimer += dt;
 
     // 0 second lifetime means we're infinite
-    if (m_propertiesFileData->emitterProperties.lifeTime > sf::seconds(0.f)) {
-        if (m_aliveTime > m_propertiesFileData->emitterProperties.lifeTime) {
+    if (m_propertiesFileData.emitterProperties.lifeTime > sf::seconds(0.f)) {
+        if (m_aliveTime > m_propertiesFileData.emitterProperties.lifeTime) {
             if (m_activeParticles.empty()) {
                 if (!m_loop) {
                     stop();
@@ -44,22 +44,25 @@ void ParticleEmitter::update(sf::Time dt)
             }
         }
     }
-    const auto spawnTimeExpired = m_spawnTimer > m_propertiesFileData->emitterProperties.spawnFrequency;
+
+    const auto spawnTimeExpired = m_spawnTimer > m_propertiesFileData.emitterProperties.spawnFrequency;
     bool emitterStillValid { false };
-    if (m_propertiesFileData->emitterProperties.lifeTime > sf::seconds(0.f)) {
-        emitterStillValid = m_aliveTime < m_propertiesFileData->emitterProperties.lifeTime;
+
+    if (m_propertiesFileData.emitterProperties.lifeTime > sf::seconds(0.f)) {
+        emitterStillValid = m_aliveTime < m_propertiesFileData.emitterProperties.lifeTime;
     } else {
         emitterStillValid = true;
     }
+
     if (spawnTimeExpired && emitterStillValid) {
         emitParticle(sf::seconds(0.f));
-        const auto difference = m_spawnTimer - m_propertiesFileData->emitterProperties.spawnFrequency;
+        const auto difference = m_spawnTimer - m_propertiesFileData.emitterProperties.spawnFrequency;
         const auto missedParticleCount
-            = static_cast<i32>(difference / m_propertiesFileData->emitterProperties.spawnFrequency);
+            = static_cast<i32>(difference / m_propertiesFileData.emitterProperties.spawnFrequency);
 
         for (auto i { 1 }; i <= missedParticleCount; ++i)
             emitParticle(
-                sf::seconds(m_propertiesFileData->emitterProperties.spawnFrequency.asSeconds() * static_cast<f32>(i)));
+                sf::seconds(m_propertiesFileData.emitterProperties.spawnFrequency.asSeconds() * static_cast<f32>(i)));
 
         m_spawnTimer = sf::Time::Zero;
     }
@@ -81,23 +84,23 @@ void ParticleEmitter::update(sf::Time dt)
         // If there's a valid acceleration value, we'll apply acceleration to the velocity
         // otherwise we'll lerp the speed value and use the current rotation of the
         // particle as the direction
-        if (m_propertiesFileData->particleProperties.acceleration != sf::Vector2f {}) {
-            p.velocity += m_propertiesFileData->particleProperties.acceleration * dt.asSeconds();
+        if (m_propertiesFileData.particleProperties.acceleration != sf::Vector2f {}) {
+            p.velocity += m_propertiesFileData.particleProperties.acceleration * dt.asSeconds();
 
             // Maximum speed only applies when we're using acceleration
-            if (p.velocity.lengthSq() > std::pow(m_propertiesFileData->particleProperties.maximumSpeed, 2.f))
-                p.velocity = p.velocity.normalized() * m_propertiesFileData->particleProperties.maximumSpeed;
+            if (p.velocity.lengthSq() > std::pow(m_propertiesFileData.particleProperties.maximumSpeed, 2.f))
+                p.velocity = p.velocity.normalized() * m_propertiesFileData.particleProperties.maximumSpeed;
         } else {
-            const auto newSpeed = std::lerp(m_propertiesFileData->particleProperties.speedStart,
-                                            m_propertiesFileData->particleProperties.speedEnd,
+            const auto newSpeed = std::lerp(m_propertiesFileData.particleProperties.speedStart,
+                                            m_propertiesFileData.particleProperties.speedEnd,
                                             t);
             p.velocity = sf::Vector2f(newSpeed, p.rotation);
         }
 
         p.position += p.velocity * dt.asSeconds();
 
-        p.scale = std::lerp(m_propertiesFileData->particleProperties.scaleStart * p.scaleMultiplier,
-                            m_propertiesFileData->particleProperties.scaleEnd * p.scaleMultiplier,
+        p.scale = std::lerp(m_propertiesFileData.particleProperties.scaleStart * p.scaleMultiplier,
+                            m_propertiesFileData.particleProperties.scaleEnd * p.scaleMultiplier,
                             t);
     }
 
@@ -115,6 +118,7 @@ void ParticleEmitter::stop()
     m_activeParticles.clear();
     m_aliveTime = sf::Time::Zero;
     m_spawnTimer = sf::Time::Zero;
+    m_isPlaying = false;
 }
 
 void ParticleEmitter::setLooping(bool looping) { m_loop = looping; }
@@ -146,8 +150,8 @@ void ParticleEmitter::reconstructVertices()
 
         auto quad = &vertices[i * VERTS_PER_QUAD];
         sf::Vector2f halfSize;
-        if (m_propertiesFileData->texture) {
-            halfSize = sf::Vector2f(m_propertiesFileData->texture->getSize()) * 0.5f;
+        if (m_propertiesFileData.texture) {
+            halfSize = sf::Vector2f(m_propertiesFileData.texture->getSize()) * 0.5f;
         } else {
             halfSize = DEFAULT_PARTICLE_SIZE * 0.5f;
         }
@@ -172,9 +176,8 @@ void ParticleEmitter::reconstructVertices()
         quad[4].position = transform * quad[4].position;
         quad[5].position = transform * quad[5].position;
 
-        const auto colour = LerpColour(m_propertiesFileData->particleProperties.colourStart,
-                                       m_propertiesFileData->particleProperties.colourEnd,
-                                       t);
+        const auto colour = LerpColour(
+            m_propertiesFileData.particleProperties.colourStart, m_propertiesFileData.particleProperties.colourEnd, t);
 
         quad[0].color = colour;
         quad[1].color = colour;
@@ -184,7 +187,7 @@ void ParticleEmitter::reconstructVertices()
         quad[5].color = colour;
 
         const auto alpha = std::lerp(
-            m_propertiesFileData->particleProperties.alphaStart, m_propertiesFileData->particleProperties.alphaEnd, t);
+            m_propertiesFileData.particleProperties.alphaStart, m_propertiesFileData.particleProperties.alphaEnd, t);
 
         quad[0].color.a = static_cast<u8>(255.f * alpha);
         quad[1].color.a = static_cast<u8>(255.f * alpha);
@@ -202,27 +205,26 @@ void ParticleEmitter::reconstructVertices()
 void ParticleEmitter::emitParticle(sf::Time timeAhead)
 {
     Particle p;
-    p.maxAliveTime
-        = sf::seconds(RNG::RealWithinRange(m_propertiesFileData->particleProperties.lifeTimeMin.asSeconds(),
-                                           m_propertiesFileData->particleProperties.lifeTimeMax.asSeconds()));
+    p.maxAliveTime = sf::seconds(RNG::RealWithinRange(m_propertiesFileData.particleProperties.lifeTimeMin.asSeconds(),
+                                                      m_propertiesFileData.particleProperties.lifeTimeMax.asSeconds()));
 
     // Rotation
     p.rotation
-        = sf::degrees(RNG::RealWithinRange(m_propertiesFileData->particleProperties.startRotationMin.asDegrees(),
-                                           m_propertiesFileData->particleProperties.startRotationMax.asDegrees()));
+        = sf::degrees(RNG::RealWithinRange(m_propertiesFileData.particleProperties.startRotationMin.asDegrees(),
+                                           m_propertiesFileData.particleProperties.startRotationMax.asDegrees()));
 
-    p.velocity = sf::Vector2f(m_propertiesFileData->particleProperties.speedStart, p.rotation);
+    p.velocity = sf::Vector2f(m_propertiesFileData.particleProperties.speedStart, p.rotation);
 
-    p.scale = m_propertiesFileData->particleProperties.scaleStart;
+    p.scale = m_propertiesFileData.particleProperties.scaleStart;
 
-    if (m_propertiesFileData->particleProperties.minimumScaleMultiplier != 1.f) {
+    if (m_propertiesFileData.particleProperties.minimumScaleMultiplier != 1.f) {
 
-        if (m_propertiesFileData->particleProperties.minimumScaleMultiplier > 1.f) {
+        if (m_propertiesFileData.particleProperties.minimumScaleMultiplier > 1.f) {
             p.scaleMultiplier
-                = RNG::RealWithinRange(1.f, m_propertiesFileData->particleProperties.minimumScaleMultiplier);
+                = RNG::RealWithinRange(1.f, m_propertiesFileData.particleProperties.minimumScaleMultiplier);
         } else {
             p.scaleMultiplier
-                = RNG::RealWithinRange(m_propertiesFileData->particleProperties.minimumScaleMultiplier, 1.f);
+                = RNG::RealWithinRange(m_propertiesFileData.particleProperties.minimumScaleMultiplier, 1.f);
         }
     }
 

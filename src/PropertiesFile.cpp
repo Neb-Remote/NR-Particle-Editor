@@ -99,3 +99,11 @@ tl::expected<PropertiesFileData, std::string> LoadFromJSON(std::string_view file
     }
     return { propFileData };
 }
+
+bool ValidateEditedProperties(const PropertiesFileData& particleProperties)
+{
+    if (particleProperties.emitterProperties.spawnFrequency.asSeconds() <= 0.f)
+        return false;
+
+    return true;
+}

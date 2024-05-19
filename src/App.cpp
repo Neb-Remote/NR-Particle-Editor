@@ -208,7 +208,24 @@ void App::displayParticleProperties()
         ImGui::SetTooltip("Particle end colour");
 }
 
-void App::displayEmitterProperties() { }
+void App::displayEmitterProperties()
+{
+    // We disable looping after any edits to ensure the particle system will stop playing
+    // since when it stops playing there is a force reset mechanism performed by the app
+    // which will recreate the emitter with the updated properties
+    f32 spawnFrequency = m_propertiesFileData.emitterProperties.spawnFrequency.asSeconds();
+    if (ImGui::InputFloat("Spawn Frequency", &spawnFrequency)) {
+        m_propertiesFileData.emitterProperties.spawnFrequency = sf::seconds(spawnFrequency);
+        if (ValidateEditedProperties(m_propertiesFileData)) {
+            m_emitter->setLooping(false);
+            m_loadErrorString.clear();
+        } else
+            m_loadErrorString = "Invalid spawn frequency!";
+    }
+
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        ImGui::SetTooltip("Seconds between each particle being spawned");
+}
 
 sf::Vector2i App::calculateMenuSize()
 {
@@ -221,7 +238,7 @@ sf::Vector2i App::calculateMenuSize()
 void App::resetEmitter()
 {
     m_emitter.reset();
-    m_emitter = std::make_unique<ParticleEmitter>(&m_propertiesFileData);
+    m_emitter = std::make_unique<ParticleEmitter>(m_propertiesFileData);
     m_emitter->setPosition(sf::Vector2f(m_renderWindow.getSize()) * 0.5f);
     m_emitter->play();
     m_emitter->setLooping(true);

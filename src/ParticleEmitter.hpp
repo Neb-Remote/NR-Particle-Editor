@@ -1,5 +1,6 @@
 #pragma once
 
+#include "PropertiesFile.hpp"
 #include "Types.hpp"
 
 #include <SFML/Graphics/Drawable.hpp>
@@ -8,8 +9,6 @@
 #include <SFML/Graphics/VertexBuffer.hpp>
 #include <SFML/System/Time.hpp>
 #include <vector>
-
-struct PropertiesFileData;
 
 struct Particle {
     sf::Vector2f position;
@@ -24,7 +23,7 @@ struct Particle {
 
 class ParticleEmitter : public sf::Drawable, public sf::Transformable {
 public:
-    explicit ParticleEmitter(PropertiesFileData* propertiesFileData);
+    explicit ParticleEmitter(const PropertiesFileData& propertiesFileData);
     void update(sf::Time dt);
 
     void play();
@@ -39,7 +38,7 @@ private:
     void reconstructVertices();
     void emitParticle(sf::Time timeAhead);
 
-    PropertiesFileData* m_propertiesFileData;
+    PropertiesFileData m_propertiesFileData;
     sf::VertexBuffer m_vertexBuffer;
     std::vector<Particle> m_activeParticles;
     sf::Time m_spawnTimer;

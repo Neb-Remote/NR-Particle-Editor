@@ -50,4 +50,7 @@ struct PropertiesFileData {
 };
 
 [[nodiscard]] tl::expected<PropertiesFileData, std::string> LoadFromJSON(std::string_view filePath) noexcept;
+
 // void SaveToJSON();
+
+[[nodiscard]] bool ValidateEditedProperties(const PropertiesFileData& propFileData);
